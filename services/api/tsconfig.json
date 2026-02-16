@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "outDir": "dist",
+    "rootDir": "src",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "moduleResolution": "node",
+    "noEmit": false,
+    "baseUrl": "../..",
+    "paths": {
+      "@magazine/config": ["packages/config/dist"],
+      "@magazine/db": ["packages/db/dist"]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "types": ["node"],
+  "typeRoots": ["./node_modules/@types", "../../node_modules/@types"],
+  "exclude": ["node_modules", "dist", "src/**/__tests__/**", "src/**/*.test.ts"]
+}

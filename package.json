@@ -1,0 +1,26 @@
+{
+  "name": "magazine-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "services/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "pnpm --filter services-api dev",
+    "dev:web": "pnpm --filter apps-web dev",
+    "build": "pnpm run build:packages && pnpm run build:apps",
+    "lint": "eslint . --ext .ts,.tsx,.js --max-warnings=0",
+    "format": "prettier --write .",
+    "prepare": "husky install",
+    "build:packages": "pnpm --filter @magazine/config build && pnpm --filter @magazine/db build",
+    "build:apps": "pnpm --filter services-api build"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}

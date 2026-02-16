@@ -1,0 +1,414 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum DeliveryMode {
+  ELECTRONIC
+  PHYSICAL
+  BOTH
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  PENDING
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum DispatchStatus {
+  SCHEDULED
+  DISPATCHED
+  DELIVERED
+  FAILED
+  CANCELLED
+}
+
+model User {
+  id                 BigInt    @id @default(autoincrement())
+  email              String    @unique
+  name               String?
+  phone              String?
+  primaryGuardianId  BigInt? @unique
+  isAdmin            Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  // relations
+  guardians          Guardian[]        @relation("user_guardians")
+  primaryGuardian    Guardian?         @relation("user_primary_guardian", fields: [primaryGuardianId], references: [id])
+  readers            Reader[]
+  addresses          Address[]
+  subscriptions      UserSubscription[]
+  payments           Payment[]
+  editionPurchases   EditionPurchase[]
+  couponUsages       CouponUsage[]
+  sessions           Session[]
+
+  @@index([email])
+  @@map("users")
+}
+
+model Guardian {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt
+  name      String
+  phone     String?
+  relation  String? // e.g., mother, father
+  createdAt DateTime @default(now())
+
+  user User @relation("user_guardians", fields: [userId], references: [id])
+
+  // A guardian can be set as primary for its user via User.primaryGuardianId relation
+  primaryForUser User? @relation("user_primary_guardian")
+  @@index([userId])
+  @@map("guardians")
+}
+
+model Reader {
+  id            BigInt       @id @default(autoincrement())
+  userId        BigInt
+  name          String
+  dob           DateTime?
+  deliveryMode  DeliveryMode @default(ELECTRONIC)
+  age           Int?
+  className     String?
+  schoolName    String?
+  schoolCity    String?
+  parentPermissionRequired Boolean @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  user          User         @relation(fields: [userId], references: [id])
+  addresses     Address[]
+  bookmarks     Bookmark[]
+  highlights    Highlight[]
+  notes         Note[]
+  progress      ReaderProgress[]
+  subscriptions UserSubscription[]
+  purchases     EditionPurchase[]
+
+  @@index([userId])
+  @@map("readers")
+}
+
+model Address {
+  id         BigInt   @id @default(autoincrement())
+  userId     BigInt?
+  readerId   BigInt?
+  line1      String
+  line2      String?
+  city       String
+  state      String?
+  postalCode String
+  country    String
+  createdAt  DateTime @default(now())
+
+  user   User?   @relation(fields: [userId], references: [id])
+  reader Reader? @relation(fields: [readerId], references: [id])
+  dispatchSchedules DispatchSchedule[]
+
+  @@index([userId])
+  @@index([readerId])
+  @@map("addresses")
+}
+
+model Magazine {
+  id          BigInt            @id @default(autoincrement())
+  title       String
+  slug        String            @unique
+  publisher   String?
+  description String?
+  category    String?
+  active      Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  coverKey    String?           @db.VarChar(1024)
+  editions    MagazineEdition[]
+
+  @@map("magazines")
+}
+
+model MagazineEdition {
+  id           BigInt   @id @default(autoincrement())
+  magazineId   BigInt
+  volume       Int?
+  issueNumber  Int?
+  sku          String?  @unique
+  publishedAt  DateTime?
+  pages        Int?
+  fileKey      String?  // storage key
+  sampleKey    String?  @db.VarChar(1024)
+  createdAt    DateTime @default(now())
+
+  magazine Magazine @relation(fields: [magazineId], references: [id])
+  purchases EditionPurchase[]
+  bookmarks Bookmark[]
+  highlights Highlight[]
+  notes Note[]
+  progress ReaderProgress[]
+  dispatchSchedules DispatchSchedule[]
+  videos EditionVideo[]
+
+  @@index([magazineId])
+  @@map("magazine_editions")
+}
+
+model SubscriptionPlan {
+  id                 BigInt    @id @default(autoincrement())
+  name               String
+  slug               String    @unique
+  description        String?
+  priceCents         Int
+  currency           String    @default("USD")
+  minMonths          Int       @default(1)
+  maxMonths          Int?
+  deliveryMode       DeliveryMode @default(BOTH)
+  autoDispatch       Boolean   @default(true)
+  dispatchFrequencyDays Int?    // if autoDispatch true, how often to dispatch physical copies
+  active             Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+
+  subscriptions UserSubscription[]
+
+  @@map("subscription_plans")
+}
+
+model UserSubscription {
+  id             BigInt            @id @default(autoincrement())
+  userId         BigInt
+  readerId       BigInt?
+  magazineId     BigInt?
+  planId         BigInt
+  status         SubscriptionStatus @default(PENDING)
+  startsAt       DateTime
+  endsAt         DateTime?
+  autoRenew      Boolean           @default(true)
+  priceCents     Int
+  currency       String            @default("USD")
+  couponId       BigInt?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  user    User             @relation(fields: [userId], references: [id])
+  reader  Reader?          @relation(fields: [readerId], references: [id])
+  plan    SubscriptionPlan @relation(fields: [planId], references: [id])
+  coupon  Coupon?          @relation(fields: [couponId], references: [id])
+  payments Payment[]
+  dispatchSchedules DispatchSchedule[]
+  couponUsages CouponUsage[]
+
+  @@index([userId])
+  @@index([readerId])
+  @@index([magazineId])
+  @@index([planId], name: "idx_subscription_plan_id")
+  @@map("user_subscriptions")
+}
+
+model EditionPurchase {
+  id         BigInt   @id @default(autoincrement())
+  userId     BigInt
+  readerId   BigInt?
+  editionId  BigInt
+  priceCents Int
+  currency   String   @default("USD")
+  paymentId  BigInt?
+  purchasedAt DateTime @default(now())
+
+  user    User   @relation(fields: [userId], references: [id])
+  reader  Reader? @relation(fields: [readerId], references: [id])
+  edition MagazineEdition @relation(fields: [editionId], references: [id])
+  payment Payment? @relation(fields: [paymentId], references: [id])
+
+  @@index([userId])
+  @@index([readerId])
+  @@index([editionId])
+  @@map("edition_purchases")
+}
+
+model Payment {
+  id                BigInt   @id @default(autoincrement())
+  userId            BigInt?
+  subscriptionId    BigInt?
+  amountCents       Int
+  currency          String   @default("USD")
+  provider          String
+  providerPaymentId String?
+  status            PaymentStatus @default(PENDING)
+  metadata          Json?
+  createdAt         DateTime @default(now())
+
+  user         User?           @relation(fields: [userId], references: [id])
+  subscription UserSubscription? @relation(fields: [subscriptionId], references: [id])
+  editionPurchases EditionPurchase[]
+
+  @@index([userId])
+  @@index([subscriptionId])
+  @@map("payments")
+}
+
+model Coupon {
+  id            BigInt   @id @default(autoincrement())
+  code          String   @unique
+  description   String?
+  discountPct   Int?
+  discountCents Int?
+  expiresAt     DateTime?
+  maxUses       Int?
+  perUserLimit  Int?
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  usages CouponUsage[]
+  userSubscriptions UserSubscription[]
+  planId BigInt?
+  magazineId BigInt?
+
+  @@map("coupons")
+}
+
+model CouponUsage {
+  id             BigInt   @id @default(autoincrement())
+  couponId       BigInt
+  userId         BigInt?
+  subscriptionId BigInt?
+  usedAt         DateTime @default(now())
+
+  coupon Coupon @relation(fields: [couponId], references: [id])
+  user   User?   @relation(fields: [userId], references: [id])
+  subscription UserSubscription? @relation(fields: [subscriptionId], references: [id])
+
+  @@index([couponId])
+  @@index([userId])
+  @@index([subscriptionId])
+  @@map("coupon_usages")
+}
+
+model DispatchSchedule {
+  id             BigInt       @id @default(autoincrement())
+  subscriptionId BigInt
+  editionId      BigInt?
+  scheduledAt    DateTime
+  status         DispatchStatus @default(SCHEDULED)
+  dispatchedAt   DateTime?
+  trackingNumber String?
+  packedAt       DateTime?
+  shippedAt      DateTime?
+  deliveredAt    DateTime?
+  courierTrackingNumber String? @db.VarChar(255)
+  addressId      BigInt?
+  createdAt      DateTime @default(now())
+
+  subscription UserSubscription @relation(fields: [subscriptionId], references: [id])
+  edition      MagazineEdition?   @relation(fields: [editionId], references: [id])
+  address      Address?           @relation(fields: [addressId], references: [id])
+
+  @@index([subscriptionId])
+  @@index([editionId])
+  @@map("dispatch_schedules")
+}
+
+model Bookmark {
+  id         BigInt  @id @default(autoincrement())
+  readerId   BigInt
+  editionId  BigInt
+  pageNumber Int?
+  createdAt  DateTime @default(now())
+
+  reader Reader @relation(fields: [readerId], references: [id])
+  edition MagazineEdition @relation(fields: [editionId], references: [id])
+
+  @@index([readerId])
+  @@index([editionId])
+  @@map("bookmarks")
+}
+
+model Highlight {
+  id         BigInt  @id @default(autoincrement())
+  readerId   BigInt
+  editionId  BigInt
+  pageNumber Int?
+  text       String
+  color      String?
+  createdAt  DateTime @default(now())
+
+  reader Reader @relation(fields: [readerId], references: [id])
+  edition MagazineEdition @relation(fields: [editionId], references: [id])
+
+  @@index([readerId])
+  @@index([editionId])
+  @@map("highlights")
+}
+
+model Note {
+  id         BigInt  @id @default(autoincrement())
+  readerId   BigInt
+  editionId  BigInt
+  pageNumber Int?
+  content    String
+  createdAt  DateTime @default(now())
+
+  reader Reader @relation(fields: [readerId], references: [id])
+  edition MagazineEdition @relation(fields: [editionId], references: [id])
+
+  @@index([readerId])
+  @@index([editionId])
+  @@map("notes")
+}
+
+model ReaderProgress {
+  id         BigInt  @id @default(autoincrement())
+  readerId   BigInt
+  editionId  BigInt
+  currentPage Int?
+  percent     Float?   // 0.0 - 100.0
+  updatedAt   DateTime @updatedAt
+
+  reader Reader @relation(fields: [readerId], references: [id])
+  edition MagazineEdition @relation(fields: [editionId], references: [id])
+
+  @@unique([readerId, editionId])
+  @@index([readerId])
+  @@index([editionId])
+  @@map("reader_progress")
+}
+
+model Session {
+  id         BigInt   @id @default(autoincrement())
+  userId     BigInt
+  deviceName String?
+  ipAddress  String?
+  userAgent  String?
+  refreshJti String?   @unique
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model EditionVideo {
+  id         BigInt   @id @default(autoincrement())
+  editionId  BigInt
+  pageNumber Int
+  url        String
+  public     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  edition MagazineEdition @relation(fields: [editionId], references: [id])
+
+  @@index([editionId])
+  @@map("edition_videos")
+}
+
