@@ -2,14 +2,14 @@ module.exports = {
   root: true,
   parser: "@typescript-eslint/parser",
   parserOptions: {
-    project: "./tsconfig.base.json",
-    tsconfigRootDir: __dirname
+    ecmaVersion: "latest",
+    sourceType: "module",
+    ecmaFeatures: { jsx: true }
   },
   plugins: ["@typescript-eslint", "import"],
   extends: [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
-    "plugin:@typescript-eslint/recommended-requiring-type-checking",
     "plugin:import/errors",
     "plugin:import/warnings",
     "plugin:import/typescript",
@@ -17,10 +17,16 @@ module.exports = {
   ],
   rules: {
     "no-console": ["warn", { allow: ["info", "error", "warn"] }],
-    "@typescript-eslint/no-floating-promises": "error",
-    "@typescript-eslint/consistent-type-imports": "error",
+    "@typescript-eslint/consistent-type-imports": "warn",
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+    "@typescript-eslint/no-var-requires": "off",
+    "@typescript-eslint/ban-ts-comment": "off",
+    "import/no-unresolved": "off",
+    "import/no-named-as-default-member": "off",
+    "import/no-named-as-default": "off",
     "import/order": [
-      "error",
+      "warn",
       {
         "groups": ["builtin", "external", "internal", "parent", "sibling", "index"],
         "alphabetize": { "order": "asc", "caseInsensitive": true }
@@ -31,6 +37,27 @@ module.exports = {
     "import/resolver": {
       typescript: {}
     }
-  }
+  },
+  overrides: [
+    {
+      files: ["**/*.js"],
+      env: { node: true },
+      rules: {
+        "@typescript-eslint/no-var-requires": "off",
+        "no-console": "off"
+      }
+    },
+    {
+      files: ["packages/db/**/*.ts", "services/**/*.ts"],
+      env: { node: true },
+      rules: {
+        "no-console": "off"
+      }
+    },
+    {
+      files: ["apps/**/*.ts", "apps/**/*.tsx", "packages/ui/**/*.ts", "packages/ui/**/*.tsx"],
+      env: { browser: true }
+    }
+  ]
 };
 

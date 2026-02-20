@@ -1,5 +1,5 @@
-import bcrypt from 'bcryptjs';
 import { getEnv } from '@magazine/config';
+import bcrypt from 'bcryptjs';
 
 const env = getEnv();
 const saltRounds = Number(env.BCRYPT_SALT_ROUNDS || '10');
@@ -11,4 +11,3 @@ export async function hashPassword(plain: string) {
 export async function comparePassword(plain: string, hash: string) {
   return await bcrypt.compare(plain, hash);
 }
-

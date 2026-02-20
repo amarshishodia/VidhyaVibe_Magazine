@@ -55,6 +55,8 @@ model User {
   editionPurchases   EditionPurchase[]
   couponUsages       CouponUsage[]
   sessions           Session[]
+  editionOrders      EditionOrder[]
+  editionOrderProofs EditionOrderProof[]
 
   @@index([email])
   @@map("users")
@@ -135,8 +137,27 @@ model Magazine {
   createdAt   DateTime          @default(now())
   coverKey    String?           @db.VarChar(1024)
   editions    MagazineEdition[]
+  magazinePlans MagazinePlan[]
 
   @@map("magazines")
+}
+
+model MagazinePlan {
+  id           BigInt       @id @default(autoincrement())
+  magazineId   BigInt       @map("magazine_id")
+  planId       BigInt       @map("plan_id")
+  deliveryMode DeliveryMode @default(BOTH) @map("delivery_mode")
+  priceCents   Int          @map("price_cents")
+  currency     String       @default("INR")
+  active       Boolean      @default(true)
+
+  magazine Magazine         @relation(fields: [magazineId], references: [id], onDelete: Cascade)
+  plan     SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([magazineId, planId, deliveryMode])
+  @@index([magazineId])
+  @@index([planId])
+  @@map("magazine_plans")
 }
 
 model MagazineEdition {
@@ -145,14 +166,17 @@ model MagazineEdition {
   volume       Int?
   issueNumber  Int?
   sku          String?  @unique
+  description  String?  @db.Text
   publishedAt  DateTime?
   pages        Int?
+  coverKey     String?  @db.VarChar(1024)
   fileKey      String?  // storage key
   sampleKey    String?  @db.VarChar(1024)
   createdAt    DateTime @default(now())
 
   magazine Magazine @relation(fields: [magazineId], references: [id])
   purchases EditionPurchase[]
+  editionOrders EditionOrder[]
   bookmarks Bookmark[]
   highlights Highlight[]
   notes Note[]
@@ -170,7 +194,7 @@ model SubscriptionPlan {
   slug               String    @unique
   description        String?
   priceCents         Int
-  currency           String    @default("USD")
+  currency           String    @default("INR")
   minMonths          Int       @default(1)
   maxMonths          Int?
   deliveryMode       DeliveryMode @default(BOTH)
@@ -179,7 +203,8 @@ model SubscriptionPlan {
   active             Boolean   @default(true)
   createdAt          DateTime  @default(now())
 
-  subscriptions UserSubscription[]
+  subscriptions  UserSubscription[]
+  magazinePlans   MagazinePlan[]
 
   @@map("subscription_plans")
 }
@@ -190,6 +215,7 @@ model UserSubscription {
   readerId       BigInt?
   magazineId     BigInt?
   planId         BigInt
+  deliveryMode   DeliveryMode?     @map("delivery_mode")
   status         SubscriptionStatus @default(PENDING)
   startsAt       DateTime
   endsAt         DateTime?
@@ -410,5 +436,50 @@ model EditionVideo {
 
   @@index([editionId])
   @@map("edition_videos")
+}
+
+enum EditionOrderStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+}
+
+model EditionOrder {
+  id         BigInt            @id @default(autoincrement())
+  userId     BigInt            @map("user_id")
+  editionId  BigInt            @map("edition_id")
+  amountCents Int              @map("amount_cents")
+  currency   String            @default("USD")
+  status     EditionOrderStatus @default(PENDING)
+  createdAt  DateTime         @default(now()) @map("created_at")
+
+  user    User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  edition MagazineEdition     @relation(fields: [editionId], references: [id], onDelete: Restrict)
+  proofs  EditionOrderProof[]
+
+  @@index([userId])
+  @@index([editionId])
+  @@index([status])
+  @@map("edition_orders")
+}
+
+model EditionOrderProof {
+  id        BigInt    @id @default(autoincrement())
+  orderId   BigInt    @map("order_id")
+  userId    BigInt    @map("user_id")
+  fileKey   String?   @map("file_key") @db.VarChar(1024)
+  url       String?   @db.VarChar(2000)
+  verified  Boolean   @default(false)
+  verifiedAt DateTime? @map("verified_at")
+  verifiedBy BigInt?  @map("verified_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  order EditionOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([userId])
+  @@map("edition_order_proofs")
 }
 

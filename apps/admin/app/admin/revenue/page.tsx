@@ -1,17 +1,19 @@
-"use client";
-import React from "react";
-import axios from "axios";
-import { Card, Table, DatePicker, Button } from "antd";
-import dayjs from "dayjs";
+'use client';
+import { Card, Table, DatePicker, Button } from 'antd';
+import axios from 'axios';
+import dayjs from 'dayjs';
+import React from 'react';
 
 export default function RevenuePage() {
   const [rows, setRows] = React.useState<any[]>([]);
-  const [range, setRange] = React.useState<any>([dayjs().subtract(30, "day"), dayjs()]);
+  const [range, setRange] = React.useState<any>([dayjs().subtract(30, 'day'), dayjs()]);
 
   async function load() {
-    const start = range[0].format("YYYY-MM-DD");
-    const end = range[1].format("YYYY-MM-DD");
-    const res = await axios.get(`/api/admin/dashboard/revenue?start=${start}&end=${end}`, { withCredentials: true });
+    const start = range[0].format('YYYY-MM-DD');
+    const end = range[1].format('YYYY-MM-DD');
+    const res = await axios.get(`/api/admin/dashboard/revenue?start=${start}&end=${end}`, {
+      withCredentials: true,
+    });
     setRows(res.data || []);
   }
 
@@ -28,9 +30,15 @@ export default function RevenuePage() {
             Load
           </Button>
         </div>
-        <Table dataSource={rows} rowKey="date" columns={[{ title: "Date", dataIndex: "date" }, { title: "Total (cents)", dataIndex: "total_cents" }]} />
+        <Table
+          dataSource={rows}
+          rowKey="date"
+          columns={[
+            { title: 'Date', dataIndex: 'date' },
+            { title: 'Total (cents)', dataIndex: 'total_cents' },
+          ]}
+        />
       </Card>
     </main>
   );
 }
-

@@ -1,5 +1,5 @@
-import rateLimit from 'express-rate-limit';
 import { getEnv } from '@magazine/config';
+import rateLimit from 'express-rate-limit';
 
 const env = getEnv();
 
@@ -8,6 +8,5 @@ export const loginRateLimiter = rateLimit({
   max: Number(env.RATE_LIMIT_MAX || '5'),
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many login attempts, try again later' }
+  message: { error: 'Too many login attempts, try again later' },
 });
-

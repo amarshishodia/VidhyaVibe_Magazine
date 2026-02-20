@@ -1,8 +1,8 @@
-import { Env, Logger } from '@magazine/config';
+import type { Env, Logger } from '@magazine/config';
+import { registerStorageAdapter } from './providers/storage';
 import { createLocalStorageAdapter } from './providers/storage/local';
 import { createMinioAdapter } from './providers/storage/minio';
 import { createS3Adapter } from './providers/storage/s3';
-import { registerStorageAdapter } from './providers/storage';
 
 type Context = { logger: Logger };
 
@@ -24,4 +24,3 @@ export function registerAdapters(env: Env, ctx: Context) {
 
   // Cache, DB adapters would be registered similarly (by env flags)
 }
-

@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { Card, Col, Row, Statistic, Spin, Alert } from 'antd';
 import { ReadOutlined, UserOutlined, RiseOutlined, FileTextOutlined } from '@ant-design/icons';
+import { Card, Col, Row, Statistic, Spin, Alert } from 'antd';
+import React, { useEffect, useState } from 'react';
 import api from '../../lib/api';
 
 interface DashboardStats {
@@ -110,9 +110,25 @@ export default function DashboardPage() {
           </Col>
           <Col span={12} xs={24} md={12}>
             <Card title="Quick Actions">
-              <ul>
-                <li><a href="/admin/magazines/create">Add New Magazine</a></li>
-                <li><a href="/admin/users">View Users</a></li>
+              <ul style={{ listStyle: 'none', padding: 0 }}>
+                <li>
+                  <a href="/admin/magazines/new">Add New Magazine</a>
+                </li>
+                <li>
+                  <a href="/admin/users">View Users</a>
+                </li>
+                <li>
+                  <a href="/admin/plans">Plans & Pricing</a>
+                </li>
+                <li>
+                  <a href="/admin/subscriptions">Subscribers</a>
+                </li>
+                <li>
+                  <a href="/admin/readers">Readers</a>
+                </li>
+                <li>
+                  <a href="/admin/orders">Orders & Payments</a>
+                </li>
               </ul>
             </Card>
           </Col>

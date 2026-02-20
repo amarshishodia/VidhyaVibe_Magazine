@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { requireAuth } from '../../middleware/auth';
 import { requireAdmin } from '../../middleware/admin';
+import { requireAuth } from '../../middleware/auth';
 import { assignEditionsToSchedules } from '../../services/dispatchScheduler';
 
 const router = Router();
@@ -49,9 +49,10 @@ router.get('/:id', async (req, res) => {
   const pool = require('../../db').getPool();
   const conn = await pool.getConnection();
   try {
-    const [rows]: any = await conn.query('SELECT ds.*, us.userId, us.readerId, us.planId, us.magazineId FROM dispatch_schedules ds JOIN user_subscriptions us ON ds.subscriptionId = us.id WHERE ds.id = ? LIMIT 1', [
-      id
-    ]);
+    const [rows]: any = await conn.query(
+      'SELECT ds.*, us.userId, us.readerId, us.planId, us.magazineId FROM dispatch_schedules ds JOIN user_subscriptions us ON ds.subscriptionId = us.id WHERE ds.id = ? LIMIT 1',
+      [id],
+    );
     const row = rows[0];
     if (!row) return res.status(404).json({ error: 'not_found' });
     res.json(row);
@@ -66,7 +67,8 @@ router.get('/:id', async (req, res) => {
 // update dispatch (status, timestamps, courier tracking)
 router.put('/:id', async (req, res) => {
   const id = Number(req.params.id);
-  const { status, courierTrackingNumber, packedAt, shippedAt, deliveredAt, trackingNumber } = req.body;
+  const { status, courierTrackingNumber, packedAt, shippedAt, deliveredAt, trackingNumber } =
+    req.body;
   const pool = require('../../db').getPool();
   const conn = await pool.getConnection();
   try {
@@ -110,4 +112,3 @@ router.put('/:id', async (req, res) => {
 });
 
 export default router;
-

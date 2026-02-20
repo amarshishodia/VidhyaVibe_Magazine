@@ -1,8 +1,8 @@
-"use client";
-import React from 'react';
+'use client';
 import { AuthForm } from '@magazine/ui';
 import axios from 'axios';
 import { useRouter, useSearchParams } from 'next/navigation';
+import React from 'react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,4 +26,3 @@ export default function LoginPage() {
     </main>
   );
 }
-

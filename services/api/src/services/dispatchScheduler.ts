@@ -1,5 +1,5 @@
-import { getPool } from '../db';
 import { createLogger } from '@magazine/config';
+import { getPool } from '../db';
 
 const logger = createLogger('dispatch-scheduler');
 
@@ -16,7 +16,7 @@ export async function assignEditionsToSchedules(limit = 100) {
        AND us.magazine_id IS NOT NULL
        ORDER BY ds.scheduled_at ASC
        LIMIT ?`,
-      [limit]
+      [limit],
     );
 
     let updated = 0;
@@ -29,11 +29,14 @@ export async function assignEditionsToSchedules(limit = 100) {
       // find latest edition published at or before scheduledAt
       const [edRows]: any = await conn.query(
         `SELECT id FROM magazine_editions WHERE magazine_id = ? AND published_at IS NOT NULL AND published_at <= ? ORDER BY published_at DESC LIMIT 1`,
-        [magazineId, scheduledAt]
+        [magazineId, scheduledAt],
       );
       const ed = edRows[0];
       if (ed) {
-        await conn.query('UPDATE dispatch_schedules SET edition_id = ? WHERE id = ?', [ed.id, schedId]);
+        await conn.query('UPDATE dispatch_schedules SET edition_id = ? WHERE id = ?', [
+          ed.id,
+          schedId,
+        ]);
         updated++;
         logger.info({ scheduleId: schedId, editionId: ed.id }, 'Assigned edition to schedule');
       } else {
@@ -46,4 +49,3 @@ export async function assignEditionsToSchedules(limit = 100) {
     conn.release();
   }
 }
-

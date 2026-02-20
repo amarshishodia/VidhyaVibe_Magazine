@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -18,10 +19,10 @@ export async function middleware(req: NextRequest) {
   try {
     const res = await fetch(`${req.nextUrl.origin}/api/auth/me`, {
       headers: {
-        cookie
+        cookie,
       },
       // ensure same-origin credentials are used
-      credentials: 'include'
+      credentials: 'include',
     });
     if (res.ok) {
       const data = await res.json();
@@ -41,6 +42,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/admin']
+  matcher: ['/admin/:path*', '/admin'],
 };
-

@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken } from '../auth/jwt';
 import { getPool } from '../db';
 
@@ -21,7 +21,10 @@ export async function requireAuth(req: AuthRequest, res: Response, next: NextFun
     const pool = getPool();
     const conn = await pool.getConnection();
     try {
-      const [rows]: any = await conn.query('SELECT id, email, isAdmin FROM users WHERE id = ? LIMIT 1', [userId]);
+      const [rows]: any = await conn.query(
+        'SELECT id, email, isAdmin FROM users WHERE id = ? LIMIT 1',
+        [userId],
+      );
       const u = rows[0];
       if (!u) return res.status(401).json({ error: 'user_not_found' });
       req.user = { id: u.id, email: u.email, isAdmin: !!u.isAdmin };
@@ -33,4 +36,3 @@ export async function requireAuth(req: AuthRequest, res: Response, next: NextFun
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
 }
-

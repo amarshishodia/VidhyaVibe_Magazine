@@ -1,8 +1,8 @@
-"use client";
-import React from "react";
-import { Card, Form, Input, InputNumber, Button, DatePicker, Switch, Select } from "antd";
-import axios from "axios";
-import { useRouter } from "next/navigation";
+'use client';
+import { Card, Form, Input, InputNumber, Button, DatePicker, Switch, Select } from 'antd';
+import axios from 'axios';
+import { useRouter } from 'next/navigation';
+import React from 'react';
 
 export default function NewCouponPage() {
   const router = useRouter();
@@ -12,8 +12,8 @@ export default function NewCouponPage() {
   async function onFinish(values: any) {
     // transform date
     if (values.expiresAt) values.expiresAt = values.expiresAt.toISOString();
-    await axios.post("/api/admin/coupons", values, { withCredentials: true });
-    router.push("/admin/coupons");
+    await axios.post('/api/admin/coupons', values, { withCredentials: true });
+    router.push('/admin/coupons');
   }
 
   return (
@@ -45,9 +45,7 @@ export default function NewCouponPage() {
             <Switch />
           </Form.Item>
           <Form.Item name="planId" label="Plan (optional)">
-            <Select allowClear>
-              {/* fetched client-side could be implemented */}
-            </Select>
+            <Select allowClear>{/* fetched client-side could be implemented */}</Select>
           </Form.Item>
           <Form.Item name="magazineId" label="Magazine (optional)">
             <Select allowClear />
@@ -62,4 +60,3 @@ export default function NewCouponPage() {
     </main>
   );
 }
-

@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { requireAuth } from '../../middleware/auth';
-import { requireAdmin } from '../../middleware/admin';
 import { getPool } from '../../db';
+import { requireAdmin } from '../../middleware/admin';
+import { requireAuth } from '../../middleware/auth';
 
 const router = Router();
 router.use(requireAuth);
@@ -22,13 +22,35 @@ router.get('/list', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const { code, description, discountPct, discountCents, expiresAt, maxUses, perUserLimit, active, planId, magazineId } = req.body;
+  const {
+    code,
+    description,
+    discountPct,
+    discountCents,
+    expiresAt,
+    maxUses,
+    perUserLimit,
+    active,
+    planId,
+    magazineId,
+  } = req.body;
   const pool = getPool();
   const conn = await pool.getConnection();
   try {
     const [r]: any = await conn.query(
       'INSERT INTO coupons (code, description, discountPct, discountCents, expiresAt, maxUses, perUserLimit, active, planId, magazineId, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())',
-      [code, description || null, discountPct || null, discountCents || null, expiresAt || null, maxUses || null, perUserLimit || null, active ? 1 : 0, planId || null, magazineId || null]
+      [
+        code,
+        description || null,
+        discountPct || null,
+        discountCents || null,
+        expiresAt || null,
+        maxUses || null,
+        perUserLimit || null,
+        active ? 1 : 0,
+        planId || null,
+        magazineId || null,
+      ],
     );
     res.status(201).json({ id: r.insertId });
   } catch (e: any) {
@@ -40,4 +62,3 @@ router.post('/', async (req, res) => {
 });
 
 export default router;
-

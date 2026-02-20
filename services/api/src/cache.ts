@@ -1,5 +1,5 @@
-import Redis from 'ioredis';
 import { getEnv } from '@magazine/config';
+import Redis from 'ioredis';
 
 const env = getEnv();
 let client: Redis | null = null;
@@ -27,4 +27,3 @@ export async function cacheSet(key: string, value: any, ttlSec?: number) {
   if (ttlSec) await r.set(key, s, 'EX', ttlSec);
   else await r.set(key, s);
 }
-

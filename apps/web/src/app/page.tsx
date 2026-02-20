@@ -1,5 +1,5 @@
-import React from 'react';
 import { Button } from 'antd';
+import React from 'react';
 
 export default function Page() {
   return (
@@ -9,4 +9,3 @@ export default function Page() {
     </main>
   );
 }
-

@@ -6,6 +6,7 @@
     "generate": "prisma generate",
     "migrate:dev": "dotenv -e ../../.env -- prisma migrate dev",
     "migrate:deploy": "dotenv -e ../../.env -- prisma migrate deploy",
+    "migrate:0015": "dotenv -e ../../.env -- node run-migration-0015.js",
     "seed": "dotenv -e ../../.env -- ts-node --transpile-only prisma/seed.ts",
     "build": "prisma generate && tsc -p tsconfig.json"
   },

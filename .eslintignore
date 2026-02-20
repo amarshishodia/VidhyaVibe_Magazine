@@ -1,0 +1,25 @@
+# Dependencies and build output
+node_modules
+.next
+dist
+build
+*.min.js
+
+# Config and non-JS files
+*.css
+*.scss
+*.sql
+*.prisma
+*.toml
+*.json
+*.md
+*.yaml
+*.yml
+
+# Prisma
+packages/db/prisma/migrations/**/*.sql
+**/schema.prisma
+
+# Migrations
+**/migrations/**/*.sql
+**/migration_lock.toml

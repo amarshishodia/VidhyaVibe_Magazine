@@ -1,4 +1,4 @@
-import { Env, Logger } from '@magazine/config';
+import type { Env, Logger } from '@magazine/config';
 import * as Minio from 'minio';
 
 export function createMinioAdapter(env: Env, ctx: { logger: Logger }) {
@@ -10,7 +10,7 @@ export function createMinioAdapter(env: Env, ctx: { logger: Logger }) {
     port,
     useSSL: false,
     accessKey: env.STORAGE_ACCESS_KEY || '',
-    secretKey: env.STORAGE_SECRET_KEY || ''
+    secretKey: env.STORAGE_SECRET_KEY || '',
   });
 
   async function ensureBucket(bucket: string) {
@@ -35,14 +35,12 @@ export function createMinioAdapter(env: Env, ctx: { logger: Logger }) {
       const bucket = env.STORAGE_BUCKET || 'magazine';
       const stream = await client.getObject(bucket, key);
       return stream;
-    }
-    ,
+    },
     async presignGet(key: string, expiresSec = 900) {
       const bucket = env.STORAGE_BUCKET || 'magazine';
       // minio client.presignedUrl -> presignedGetObject
       const url = await client.presignedGetObject(bucket, key, expiresSec);
       return { url, key };
-    }
+    },
   };
 }
-

@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { getPool } from '../../db';
-import { getStorageAdapter } from '../../providers/storage';
-import { requireAuth } from '../../middleware/auth';
 import { requireAdmin } from '../../middleware/admin';
+import { requireAuth } from '../../middleware/auth';
+import { getStorageAdapter } from '../../providers/storage';
 
 const router = Router();
 router.use(requireAuth);
@@ -19,7 +19,10 @@ router.post('/:magazineId/editions/presign', async (req, res) => {
     // @ts-ignore
     if (!storage.presignUpload) return res.status(400).json({ error: 'presign_not_supported' });
     // @ts-ignore
-    const { url, key: k } = await storage.presignUpload(key, contentType || 'application/octet-stream');
+    const { url, key: k } = await storage.presignUpload(
+      key,
+      contentType || 'application/octet-stream',
+    );
     res.json({ url, key: k });
   } catch (e: any) {
     console.error(e);
@@ -28,4 +31,3 @@ router.post('/:magazineId/editions/presign', async (req, res) => {
 });
 
 export default router;
-

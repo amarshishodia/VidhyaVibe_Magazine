@@ -1,8 +1,8 @@
-"use client";
-import React from 'react';
-import axios from 'axios';
+'use client';
 import { Table, Button, Card } from 'antd';
+import axios from 'axios';
 import Link from 'next/link';
+import React from 'react';
 
 export default function CouponsPage() {
   const [coupons, setCoupons] = React.useState<any[]>([]);
@@ -18,9 +18,17 @@ export default function CouponsPage() {
             <Button type="primary">New Coupon</Button>
           </Link>
         </p>
-        <Table rowKey="id" dataSource={coupons} columns={[{ title: 'Code', dataIndex: 'code' }, { title: 'Pct', dataIndex: 'discount_pct' }, { title: 'Cents', dataIndex: 'discount_cents' }, { title: 'Active', dataIndex: 'active' }]} />
+        <Table
+          rowKey="id"
+          dataSource={coupons}
+          columns={[
+            { title: 'Code', dataIndex: 'code' },
+            { title: 'Pct', dataIndex: 'discount_pct' },
+            { title: 'Cents', dataIndex: 'discount_cents' },
+            { title: 'Active', dataIndex: 'active' },
+          ]}
+        />
       </Card>
     </main>
   );
 }
-

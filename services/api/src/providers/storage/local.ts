@@ -1,6 +1,6 @@
 import path from 'path';
+import type { Env, Logger } from '@magazine/config';
 import fs from 'fs-extra';
-import { Env, Logger } from '@magazine/config';
 
 export function createLocalStorageAdapter(env: Env, ctx: { logger: Logger }) {
   const base = path.resolve(process.cwd(), 'storage');
@@ -21,7 +21,6 @@ export function createLocalStorageAdapter(env: Env, ctx: { logger: Logger }) {
     },
     async presignGet(key: string) {
       return { url: `/api/assets/serve?key=${key}`, key };
-    }
+    },
   };
 }
-

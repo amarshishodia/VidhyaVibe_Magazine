@@ -1,5 +1,5 @@
-import mysql from 'mysql2/promise';
 import { getEnv } from '@magazine/config';
+import mysql from 'mysql2/promise';
 
 const env = getEnv();
 
@@ -15,8 +15,7 @@ export function getPool() {
     password: decodeURIComponent(u.password),
     database: u.pathname.replace(/^\//, ''),
     waitForConnections: true,
-    connectionLimit: 10
+    connectionLimit: 10,
   });
   return pool;
 }
-

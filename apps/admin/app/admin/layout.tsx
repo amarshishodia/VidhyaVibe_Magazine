@@ -1,7 +1,7 @@
-"use client";
-import React from 'react';
-import { useRouter } from 'next/navigation';
+'use client';
 import axios from 'axios';
+import { useRouter } from 'next/navigation';
+import React from 'react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -25,4 +25,3 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return <>{children}</>;
 }
-

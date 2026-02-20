@@ -1,18 +1,68 @@
 import { Router } from 'express';
-import { requireAuth } from '../../middleware/auth';
-import { requireAdmin } from '../../middleware/admin';
 import { getPool } from '../../db';
-import { verifyProof } from '../../services/payments';
+import { requireAdmin } from '../../middleware/admin';
+import { requireAuth } from '../../middleware/auth';
+import { verifyProof, verifyEditionProof } from '../../services/payments';
 
 const router = Router();
 router.use(requireAuth);
 router.use(requireAdmin);
 
+/**
+ * GET /api/admin/payments/orders
+ * Combined view: subscription orders (payment_orders) + edition orders (edition_orders)
+ */
+router.get('/orders', async (req, res) => {
+  const pool = getPool();
+  const conn = await pool.getConnection();
+  try {
+    const [subOrders]: any = await conn
+      .query(
+        `
+      SELECT po.id, po.user_id as userId, po.plan_id as planId, po.magazine_id as magazineId, po.months, po.amount_cents as amountCents, po.final_cents as finalCents, po.currency, po.status, po.created_at as createdAt,
+             u.email as userEmail, u.name as userName,
+             m.title as magazineTitle,
+             sp.name as planName
+      FROM payment_orders po
+      LEFT JOIN users u ON u.id = po.user_id
+      LEFT JOIN magazines m ON m.id = po.magazine_id
+      LEFT JOIN subscription_plans sp ON sp.id = po.plan_id
+      ORDER BY po.created_at DESC
+    `,
+      )
+      .catch(() => [[]]);
+
+    const [edOrders]: any = await conn.query(`
+      SELECT eo.id, eo.user_id as userId, eo.edition_id as editionId, eo.amount_cents as amountCents, eo.currency, eo.status, eo.created_at as createdAt,
+             u.email as userEmail, u.name as userName,
+             m.title as magazineTitle, me.volume, me.issueNumber
+      FROM edition_orders eo
+      LEFT JOIN users u ON u.id = eo.user_id
+      LEFT JOIN magazine_editions me ON me.id = eo.edition_id
+      LEFT JOIN magazines m ON m.id = me.magazineId
+      ORDER BY eo.created_at DESC
+    `);
+
+    res.json({
+      subscriptionOrders: subOrders || [],
+      editionOrders: edOrders || [],
+    });
+  } catch (e: any) {
+    console.error(e);
+    res.status(500).json({ error: 'list_orders_failed' });
+  } finally {
+    conn.release();
+  }
+});
+
 router.get('/orders/pending', async (req, res) => {
   const pool = getPool();
   const conn = await pool.getConnection();
   try {
-    const [rows]: any = await conn.query('SELECT * FROM payment_orders WHERE status = ? ORDER BY created_at DESC', ['PENDING']);
+    const [rows]: any = await conn.query(
+      'SELECT * FROM payment_orders WHERE status = ? ORDER BY created_at DESC',
+      ['PENDING'],
+    );
     res.json(rows);
   } catch (e: any) {
     console.error(e);
@@ -26,7 +76,9 @@ router.get('/proofs/pending', async (req, res) => {
   const pool = getPool();
   const conn = await pool.getConnection();
   try {
-    const [rows]: any = await conn.query('SELECT p.*, o.final_cents FROM payment_proofs p JOIN payment_orders o ON p.order_id = o.id WHERE p.verified = 0 ORDER BY p.created_at DESC');
+    const [rows]: any = await conn.query(
+      'SELECT p.*, o.final_cents FROM payment_proofs p JOIN payment_orders o ON p.order_id = o.id WHERE p.verified = 0 ORDER BY p.created_at DESC',
+    );
     res.json(rows);
   } catch (e: any) {
     console.error(e);
@@ -48,5 +100,49 @@ router.post('/proofs/:id/verify', async (req, res) => {
   }
 });
 
-export default router;
+router.get('/edition-orders/pending', async (req, res) => {
+  const pool = getPool();
+  const conn = await pool.getConnection();
+  try {
+    const [rows]: any = await conn.query(
+      'SELECT * FROM edition_orders WHERE status = ? ORDER BY created_at DESC',
+      ['PENDING'],
+    );
+    res.json(rows);
+  } catch (e: any) {
+    console.error(e);
+    res.status(500).json({ error: 'list_failed' });
+  } finally {
+    conn.release();
+  }
+});
 
+router.get('/edition-proofs/pending', async (req, res) => {
+  const pool = getPool();
+  const conn = await pool.getConnection();
+  try {
+    const [rows]: any = await conn.query(
+      'SELECT p.*, o.amount_cents, o.edition_id FROM edition_order_proofs p JOIN edition_orders o ON p.order_id = o.id WHERE p.verified = 0 ORDER BY p.created_at DESC',
+    );
+    res.json(rows);
+  } catch (e: any) {
+    console.error(e);
+    res.status(500).json({ error: 'list_failed' });
+  } finally {
+    conn.release();
+  }
+});
+
+router.post('/edition-proofs/:id/verify', async (req, res) => {
+  const proofId = Number(req.params.id);
+  const adminId = Number((req as any).user?.id);
+  try {
+    const result = await verifyEditionProof(proofId, adminId);
+    res.json({ ok: true, result });
+  } catch (e: any) {
+    console.error(e);
+    res.status(400).json({ error: 'verify_failed', message: e.message });
+  }
+});
+
+export default router;

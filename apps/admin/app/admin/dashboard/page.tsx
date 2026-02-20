@@ -1,45 +1,80 @@
-"use client";
-import React from "react";
-import axios from "axios";
-import { Card, Row, Col, Statistic, Button } from "antd";
-import Link from "next/link";
+'use client';
+import { Card, Row, Col, Statistic } from 'antd';
+import Link from 'next/link';
+import React from 'react';
+import api from '../../../lib/api';
 
 export default function DashboardIndex() {
   const [summary, setSummary] = React.useState<any>(null);
 
   React.useEffect(() => {
-    axios.get("/api/admin/dashboard/subscriptions/summary", { withCredentials: true }).then((r) => setSummary(r.data));
+    api
+      .get('/admin/dashboard/summary')
+      .then((r) => setSummary(r.data))
+      .catch(() => setSummary(null));
   }, []);
 
   return (
     <main style={{ padding: 24 }}>
+      <h1 style={{ marginBottom: 24 }}>Dashboard Overview</h1>
       <Row gutter={16}>
         <Col span={6}>
           <Card>
-            <Statistic title="Total Subscriptions" value={summary?.total || 0} />
+            <Statistic title="Total Users" value={summary?.totalUsers ?? 0} />
           </Card>
         </Col>
         <Col span={6}>
           <Card>
-            <Statistic title="Plans" value={(summary?.byPlan || []).length || 0} />
+            <Statistic title="Magazines" value={summary?.totalMagazines ?? 0} />
           </Card>
         </Col>
         <Col span={6}>
           <Card>
-            <Statistic title="Pending Payments" value={0} />
+            <Statistic title="Subscriptions" value={summary?.totalSubscriptions ?? 0} />
           </Card>
         </Col>
         <Col span={6}>
           <Card>
-            <Statistic title="Dispatches Scheduled" value={0} />
+            <Statistic title="Readers" value={summary?.totalReaders ?? 0} />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title="Revenue (USD)"
+              value={(summary?.totalRevenueCents ?? 0) / 100}
+              precision={2}
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic title="Pending Proofs" value={summary?.pendingProofs ?? 0} />
           </Card>
         </Col>
       </Row>
 
-      <div style={{ marginTop: 24, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
-        <Card title="Subscription Tracking">
+      <div
+        style={{ marginTop: 24, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}
+      >
+        <Card title="Subscribers">
           <p>
-            <Link href="/admin/subscriptions">Open</Link>
+            <Link href="/admin/subscriptions">View Subscriptions</Link>
+          </p>
+        </Card>
+        <Card title="Readers">
+          <p>
+            <Link href="/admin/readers">View Readers</Link>
+          </p>
+        </Card>
+        <Card title="Orders & Payments">
+          <p>
+            <Link href="/admin/orders">View Orders</Link>
+          </p>
+        </Card>
+        <Card title="Magazines">
+          <p>
+            <Link href="/admin/magazines">Manage Magazines</Link>
           </p>
         </Card>
         <Card title="Reader & School Analytics">
@@ -50,11 +85,6 @@ export default function DashboardIndex() {
         <Card title="Dispatch Calendar">
           <p>
             <Link href="/admin/dispatches">Open</Link>
-          </p>
-        </Card>
-        <Card title="Payment Verification Queue">
-          <p>
-            <Link href="/admin/payments">Open</Link>
           </p>
         </Card>
         <Card title="Coupon Analytics">
@@ -71,4 +101,3 @@ export default function DashboardIndex() {
     </main>
   );
 }
-

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { getPool } from '../db';
-import { requireAuth, AuthRequest } from '../middleware/auth';
+import type { AuthRequest } from '../middleware/auth';
+import { requireAuth } from '../middleware/auth';
 
 const router = Router();
 
@@ -9,7 +10,16 @@ router.use(requireAuth);
 
 // Create reader (multiple readers per user allowed)
 router.post('/', async (req: AuthRequest, res) => {
-  const { name, dob, deliveryMode, age, className, schoolName, schoolCity, parentPermissionRequired } = req.body;
+  const {
+    name,
+    dob,
+    deliveryMode,
+    age,
+    className,
+    schoolName,
+    schoolCity,
+    parentPermissionRequired,
+  } = req.body;
   const userId = Number(req.user?.id);
   if (!userId) return res.status(401).json({ error: 'unauthenticated' });
   if (!name) return res.status(400).json({ error: 'name_required' });
@@ -29,8 +39,8 @@ router.post('/', async (req: AuthRequest, res) => {
         className || null,
         schoolName || null,
         schoolCity || null,
-        parentPermissionRequired ? 1 : 0
-      ]
+        parentPermissionRequired ? 1 : 0,
+      ],
     );
     res.status(201).json({ id: result.insertId });
   } catch (e: any) {
@@ -48,7 +58,10 @@ router.get('/', async (req: AuthRequest, res) => {
   const pool = getPool();
   const conn = await pool.getConnection();
   try {
-    const [rows]: any = await conn.query('SELECT id, userId, name, dob, deliveryMode, age, className, schoolName, schoolCity, parentPermissionRequired, createdAt, updatedAt FROM readers WHERE userId = ?', [userId]);
+    const [rows]: any = await conn.query(
+      'SELECT id, userId, name, dob, deliveryMode, age, className, schoolName, schoolCity, parentPermissionRequired, createdAt, updatedAt FROM readers WHERE userId = ?',
+      [userId],
+    );
     res.json(rows);
   } catch (e: any) {
     console.error(e);
@@ -66,7 +79,10 @@ router.get('/:id', async (req: AuthRequest, res) => {
   const pool = getPool();
   const conn = await pool.getConnection();
   try {
-    const [rows]: any = await conn.query('SELECT id, userId, name, dob, deliveryMode, age, className, schoolName, schoolCity, parentPermissionRequired, createdAt, updatedAt FROM readers WHERE id = ? AND userId = ? LIMIT 1', [id, userId]);
+    const [rows]: any = await conn.query(
+      'SELECT id, userId, name, dob, deliveryMode, age, className, schoolName, schoolCity, parentPermissionRequired, createdAt, updatedAt FROM readers WHERE id = ? AND userId = ? LIMIT 1',
+      [id, userId],
+    );
     const reader = rows[0];
     if (!reader) return res.status(404).json({ error: 'not_found' });
     res.json(reader);
@@ -83,13 +99,33 @@ router.put('/:id', async (req: AuthRequest, res) => {
   const userId = Number(req.user?.id);
   const id = Number(req.params.id);
   if (!userId) return res.status(401).json({ error: 'unauthenticated' });
-  const { name, dob, deliveryMode, age, className, schoolName, schoolCity, parentPermissionRequired } = req.body;
+  const {
+    name,
+    dob,
+    deliveryMode,
+    age,
+    className,
+    schoolName,
+    schoolCity,
+    parentPermissionRequired,
+  } = req.body;
   const pool = getPool();
   const conn = await pool.getConnection();
   try {
     const [resu]: any = await conn.query(
       `UPDATE readers SET name = ?, dob = ?, deliveryMode = ?, age = ?, className = ?, schoolName = ?, schoolCity = ?, parentPermissionRequired = ?, updatedAt = NOW() WHERE id = ? AND userId = ?`,
-      [name || null, dob ? new Date(dob) : null, deliveryMode || 'ELECTRONIC', age || null, className || null, schoolName || null, schoolCity || null, parentPermissionRequired ? 1 : 0, id, userId]
+      [
+        name || null,
+        dob ? new Date(dob) : null,
+        deliveryMode || 'ELECTRONIC',
+        age || null,
+        className || null,
+        schoolName || null,
+        schoolCity || null,
+        parentPermissionRequired ? 1 : 0,
+        id,
+        userId,
+      ],
     );
     if (resu.affectedRows === 0) return res.status(404).json({ error: 'not_found' });
     res.json({ id });
@@ -109,7 +145,10 @@ router.delete('/:id', async (req: AuthRequest, res) => {
   const pool = getPool();
   const conn = await pool.getConnection();
   try {
-    const [r]: any = await conn.query('DELETE FROM readers WHERE id = ? AND userId = ?', [id, userId]);
+    const [r]: any = await conn.query('DELETE FROM readers WHERE id = ? AND userId = ?', [
+      id,
+      userId,
+    ]);
     if (r.affectedRows === 0) return res.status(404).json({ error: 'not_found' });
     res.json({ deleted: true });
   } catch (e: any) {
@@ -121,4 +160,3 @@ router.delete('/:id', async (req: AuthRequest, res) => {
 });
 
 export default router;
-

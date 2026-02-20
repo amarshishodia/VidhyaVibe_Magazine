@@ -1,10 +1,15 @@
-import { Router } from 'express';
-import { getPool } from '../db';
-import { hashPassword, comparePassword } from '../auth/password';
-import { signAccessToken, signRefreshToken, verifyRefreshToken, verifyAccessToken } from '../auth/jwt';
-import { loginRateLimiter } from '../middleware/rateLimiter';
-import cookieParser from 'cookie-parser';
 import { getEnv } from '@magazine/config';
+import cookieParser from 'cookie-parser';
+import { Router } from 'express';
+import {
+  signAccessToken,
+  signRefreshToken,
+  verifyRefreshToken,
+  verifyAccessToken,
+} from '../auth/jwt';
+import { hashPassword, comparePassword } from '../auth/password';
+import { getPool } from '../db';
+import { loginRateLimiter } from '../middleware/rateLimiter';
 
 const env = getEnv();
 const router = Router();
@@ -21,27 +26,37 @@ router.post('/register', async (req, res) => {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
-    const [uRes]: any = await conn.query('INSERT INTO users (email, name, phone) VALUES (?, ?, ?)', [email, name || null, phone || null]);
+    const [uRes]: any = await conn.query(
+      'INSERT INTO users (email, name, phone) VALUES (?, ?, ?)',
+      [email, name || null, phone || null],
+    );
     const userId = uRes.insertId;
     let primaryGuardianId: number | null = null;
     for (let i = 0; i < guardians.length; i++) {
       const g = guardians[i];
-      const [gRes]: any = await conn.query('INSERT INTO guardians (userId, name, phone, relation) VALUES (?, ?, ?, ?)', [
-        userId,
-        g.name,
-        g.phone || null,
-        g.relation || null
-      ]);
+      const [gRes]: any = await conn.query(
+        'INSERT INTO guardians (userId, name, phone, relation) VALUES (?, ?, ?, ?)',
+        [userId, g.name, g.phone || null, g.relation || null],
+      );
       if (i === 0) primaryGuardianId = gRes.insertId;
     }
     // set primary guardian
     if (primaryGuardianId) {
-      await conn.query('UPDATE users SET primaryGuardianId = ? WHERE id = ?', [primaryGuardianId, userId]);
+      await conn.query('UPDATE users SET primaryGuardianId = ? WHERE id = ?', [
+        primaryGuardianId,
+        userId,
+      ]);
     }
     // store password hash in a separate auth table (simple)
     const passwordHash = await hashPassword(password);
-    await conn.query('CREATE TABLE IF NOT EXISTS user_auth (id BIGINT AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNIQUE, password_hash VARCHAR(255), created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)', []);
-    await conn.query('INSERT INTO user_auth (user_id, password_hash) VALUES (?, ?)', [userId, passwordHash]);
+    await conn.query(
+      'CREATE TABLE IF NOT EXISTS user_auth (id BIGINT AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNIQUE, password_hash VARCHAR(255), created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)',
+      [],
+    );
+    await conn.query('INSERT INTO user_auth (user_id, password_hash) VALUES (?, ?)', [
+      userId,
+      passwordHash,
+    ]);
 
     await conn.commit();
     res.status(201).json({ id: userId, email });
@@ -61,10 +76,16 @@ router.post('/login', loginRateLimiter, async (req, res) => {
   const pool = getPool();
   const conn = await pool.getConnection();
   try {
-    const [rows]: any = await conn.query('SELECT id, email, isAdmin FROM users WHERE email = ? LIMIT 1', [email]);
+    const [rows]: any = await conn.query(
+      'SELECT id, email, isAdmin FROM users WHERE email = ? LIMIT 1',
+      [email],
+    );
     const user = rows[0];
     if (!user) return res.status(401).json({ error: 'invalid_credentials' });
-    const [authRows]: any = await conn.query('SELECT password_hash FROM user_auth WHERE user_id = ? LIMIT 1', [user.id]);
+    const [authRows]: any = await conn.query(
+      'SELECT password_hash FROM user_auth WHERE user_id = ? LIMIT 1',
+      [user.id],
+    );
     const auth = authRows[0];
     if (!auth) return res.status(401).json({ error: 'invalid_credentials' });
     const ok = await comparePassword(password, auth.password_hash);
@@ -75,7 +96,7 @@ router.post('/login', loginRateLimiter, async (req, res) => {
     const userAgent = ua ? String(ua).substring(0, 1000) : null;
     const [sessionRes] = await conn.query<any>(
       'INSERT INTO sessions (userId, deviceName, ipAddress, userAgent, refreshJti, createdAt) VALUES (?, ?, ?, ?, ?, NOW(3))',
-      [user.id, deviceName || null, req.ip || null, userAgent, null]
+      [user.id, deviceName || null, req.ip || null, userAgent, null],
     );
     const sessionId = sessionRes.insertId;
 
@@ -92,15 +113,20 @@ router.post('/login', loginRateLimiter, async (req, res) => {
       httpOnly: true,
       secure: env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
     });
 
-    res.json({ access_token: access, token_type: 'bearer', expires_in: 15 * 60, user: { id: user.id, email: user.email, isAdmin: !!user.isAdmin } });
+    res.json({
+      access_token: access,
+      token_type: 'bearer',
+      expires_in: 15 * 60,
+      user: { id: user.id, email: user.email, isAdmin: !!user.isAdmin },
+    });
   } catch (e: any) {
     console.error('Login error:', e);
     res.status(500).json({
       error: 'login_failed',
-      ...(env.NODE_ENV === 'development' && { details: e?.message })
+      ...(env.NODE_ENV === 'development' && { details: e?.message }),
     });
   } finally {
     conn.release();
@@ -117,7 +143,10 @@ router.post('/refresh', async (req, res) => {
     const payload: any = verifyRefreshToken(refreshToken);
     const jti = payload.jti;
     // find session with jti
-    const [rows]: any = await conn.query('SELECT id, userId FROM sessions WHERE refreshJti = ? LIMIT 1', [jti]);
+    const [rows]: any = await conn.query(
+      'SELECT id, userId FROM sessions WHERE refreshJti = ? LIMIT 1',
+      [jti],
+    );
     const session = rows[0];
     if (!session) return res.status(401).json({ error: 'invalid_session' });
 
@@ -169,7 +198,10 @@ router.get('/me', async (req, res) => {
       try {
         const payload: any = verifyAccessToken(token);
         const userId = Number(payload.sub);
-        const [rows]: any = await conn.query('SELECT id, email, isAdmin FROM users WHERE id = ? LIMIT 1', [userId]);
+        const [rows]: any = await conn.query(
+          'SELECT id, email, isAdmin FROM users WHERE id = ? LIMIT 1',
+          [userId],
+        );
         const u = rows[0];
         if (!u) return res.status(404).json({ error: 'user_not_found' });
         return res.json({ id: u.id, email: u.email, isAdmin: !!u.isAdmin });
@@ -184,11 +216,17 @@ router.get('/me', async (req, res) => {
     try {
       const payload: any = verifyRefreshToken(refreshToken);
       const jti = payload.jti;
-      const [sessions]: any = await conn.query('SELECT userId FROM sessions WHERE refreshJti = ? LIMIT 1', [jti]);
+      const [sessions]: any = await conn.query(
+        'SELECT userId FROM sessions WHERE refreshJti = ? LIMIT 1',
+        [jti],
+      );
       const session = sessions[0];
       if (!session) return res.status(401).json({ error: 'invalid_session' });
       const userId = session.userId;
-      const [rows]: any = await conn.query('SELECT id, email, isAdmin FROM users WHERE id = ? LIMIT 1', [userId]);
+      const [rows]: any = await conn.query(
+        'SELECT id, email, isAdmin FROM users WHERE id = ? LIMIT 1',
+        [userId],
+      );
       const u = rows[0];
       if (!u) return res.status(404).json({ error: 'user_not_found' });
       return res.json({ id: u.id, email: u.email, isAdmin: !!u.isAdmin });
@@ -201,4 +239,3 @@ router.get('/me', async (req, res) => {
 });
 
 export default router;
-

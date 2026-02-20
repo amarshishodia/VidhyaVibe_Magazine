@@ -1,9 +1,15 @@
 import { Router } from 'express';
-import { requireAuth, AuthRequest } from '../middleware/auth';
 import multer from 'multer';
-import { getStorageAdapter } from '../providers/storage';
-import { createOrder, attachProof, verifyProof } from '../services/payments';
 import { getPool } from '../db';
+import type { AuthRequest } from '../middleware/auth';
+import { requireAuth } from '../middleware/auth';
+import { getStorageAdapter } from '../providers/storage';
+import {
+  createOrder,
+  attachProof,
+  createEditionOrder,
+  attachEditionProof,
+} from '../services/payments';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -15,7 +21,16 @@ router.post('/create-order', async (req: AuthRequest, res) => {
   const userId = Number(req.user?.id);
   const { planId, months, readerId, deliveryMode, addressId, couponCode, magazineId } = req.body;
   try {
-    const result = await createOrder({ userId, planId: Number(planId), months: Number(months), readerId, deliveryMode, addressId, couponCode, magazineId });
+    const result = await createOrder({
+      userId,
+      planId: Number(planId),
+      months: Number(months),
+      readerId,
+      deliveryMode,
+      addressId,
+      couponCode,
+      magazineId,
+    });
     res.json(result);
   } catch (e: any) {
     console.error(e);
@@ -23,7 +38,51 @@ router.post('/create-order', async (req: AuthRequest, res) => {
   }
 });
 
-// upload payment proof (multipart)
+// purchase single edition
+router.post('/purchase-edition', async (req: AuthRequest, res) => {
+  const userId = Number(req.user?.id);
+  const { editionId } = req.body;
+  if (!userId) return res.status(401).json({ error: 'unauthenticated' });
+  if (!editionId) return res.status(400).json({ error: 'editionId_required' });
+  try {
+    const result = await createEditionOrder(userId, Number(editionId));
+    res.json(result);
+  } catch (e: any) {
+    console.error(e);
+    res.status(400).json({ error: 'purchase_failed', message: e.message });
+  }
+});
+
+// upload payment proof for edition order
+router.post(
+  '/edition-order/:orderId/proof',
+  upload.single('proof'),
+  async (req: AuthRequest, res) => {
+    const userId = Number(req.user?.id);
+    const orderId = Number(req.params.orderId);
+    if (!userId) return res.status(401).json({ error: 'unauthenticated' });
+    try {
+      const storage = getStorageAdapter();
+      let fileKey: string | undefined = undefined;
+      if (req.file) {
+        const key = `payments/edition/${orderId}/${Date.now()}-${req.file.originalname}`;
+        const up = await storage.upload(key, req.file.buffer, req.file.mimetype);
+        fileKey = up.key;
+      } else if (req.body?.url) {
+        return res.status(400).json({ error: 'file_required' });
+      } else {
+        return res.status(400).json({ error: 'file_or_url_required' });
+      }
+      const proofId = await attachEditionProof(orderId, userId, fileKey);
+      res.status(201).json({ proofId });
+    } catch (e: any) {
+      console.error(e);
+      res.status(500).json({ error: 'attach_proof_failed', message: e.message });
+    }
+  },
+);
+
+// upload payment proof (multipart) - for subscription orders
 router.post('/:orderId/proof', upload.single('proof'), async (req: AuthRequest, res) => {
   const userId = Number(req.user?.id);
   const orderId = Number(req.params.orderId);
@@ -50,4 +109,3 @@ router.post('/:orderId/proof', upload.single('proof'), async (req: AuthRequest, 
 });
 
 export default router;
-

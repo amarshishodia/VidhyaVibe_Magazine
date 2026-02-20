@@ -1,51 +1,54 @@
 import './dotenv-loader';
+import { createLogger, getEnv } from '@magazine/config';
+import cookieParser from 'cookie-parser';
 import express from 'express';
-import { createLogger } from '@magazine/config';
 
-import { json } from 'body-parser';
-
+import rateLimit from 'express-rate-limit';
+import helmet from 'helmet';
+import { auditMiddleware } from './middleware/audit';
 import { errorHandler } from './middleware/errorHandler';
 import { registerAdapters } from './providers';
-import cookieParser from 'cookie-parser';
-import authRoutes from './routes/auth';
-import readersRoutes from './routes/readers';
+import adminCouponsRoutes from './routes/admin/coupons';
+import adminDashboardRoutes from './routes/admin/dashboard';
+import adminDispatchesRoutes from './routes/admin/dispatches';
 import adminMagazineRoutes from './routes/admin/magazine';
 import adminMagazineListRoutes from './routes/admin/magazine-list';
-import adminPresignRoutes from './routes/admin/presign';
-import subscriptionsRoutes from './routes/subscriptions';
-import adminCouponsRoutes from './routes/admin/coupons';
-import paymentsRoutes from './routes/payments';
 import adminPaymentsRoutes from './routes/admin/payments';
-import editionsRoutes from './routes/editions';
-import readerProgressRoutes from './routes/readerProgress';
-import interactionsRoutes from './routes/interactions';
-import adminDispatchesRoutes from './routes/admin/dispatches';
-import adminDashboardRoutes from './routes/admin/dashboard';
+import adminPlansRoutes from './routes/admin/plans';
+import adminPresignRoutes from './routes/admin/presign';
+import adminReadersRoutes from './routes/admin/readers';
+import adminSubscriptionsRoutes from './routes/admin/subscriptions';
 import adminUsersRoutes from './routes/admin/users';
-import magazinesRoutes from './routes/magazines';
 import assetsRoutes from './routes/assets';
-import { auditMiddleware } from './middleware/audit';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
-import { getEnv } from '@magazine/config';
+import authRoutes from './routes/auth';
+import editionsRoutes from './routes/editions';
+import interactionsRoutes from './routes/interactions';
+import libraryRoutes from './routes/library';
+import magazinesRoutes from './routes/magazines';
+import paymentsRoutes from './routes/payments';
+import readerProgressRoutes from './routes/readerProgress';
+import readersRoutes from './routes/readers';
+import subscriptionsRoutes from './routes/subscriptions';
 
 const logger = createLogger('api');
 const env = getEnv();
 
 const app = express();
+// Trust proxy so express-rate-limit can correctly identify clients via X-Forwarded-For
+app.set('trust proxy', 1);
 // Security headers
 app.use(helmet());
-app.use(json());
+app.use(express.json());
 app.use(cookieParser());
 
-// Global rate limiter
+// Global rate limiter (reader loads PDF + pages can exceed 100 req/15min)
 app.use(
   rateLimit({
     windowMs: Number(env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000),
-    max: Number(env.RATE_LIMIT_MAX || 100),
+    max: Number(env.RATE_LIMIT_MAX || 1000),
     standardHeaders: true,
-    legacyHeaders: false
-  })
+    legacyHeaders: false,
+  }),
 );
 
 // Audit logging (after rate limiting)
@@ -53,6 +56,7 @@ app.use(auditMiddleware);
 
 // Public routes (no auth required)
 app.use('/api/magazines', magazinesRoutes);
+app.use('/api/library', libraryRoutes);
 
 // auth routes
 app.use('/api/auth', authRoutes);
@@ -70,6 +74,9 @@ app.use('/api/interactions', interactionsRoutes);
 app.use('/api/admin/dispatches', adminDispatchesRoutes);
 app.use('/api/admin/dashboard', adminDashboardRoutes);
 app.use('/api/admin/users', adminUsersRoutes);
+app.use('/api/admin/subscriptions', adminSubscriptionsRoutes);
+app.use('/api/admin/readers', adminReadersRoutes);
+app.use('/api/admin/plans', adminPlansRoutes);
 app.use('/api/assets', assetsRoutes);
 
 // Register provider adapters (storage, cache, db) based on env
@@ -101,4 +108,3 @@ if (process.env.RUN_DISPATCH_WORKER === 'true') {
     }
   }, intervalMs);
 }
-

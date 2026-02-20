@@ -1,7 +1,7 @@
-import React from 'react';
 import { App, ConfigProvider } from 'antd';
-import StyledComponentsRegistry from '../lib/AntdRegistry';
+import React from 'react';
 import DashboardLayout from '../components/DashboardLayout';
+import StyledComponentsRegistry from '../lib/AntdRegistry';
 import './globals.css';
 
 export const metadata = {
@@ -9,9 +9,7 @@ export const metadata = {
   description: 'Admin panel for Magazine Subscription Service',
 };
 
-export default function RootLayout({
-  children,
-}: React.PropsWithChildren) {
+export default function RootLayout({ children }: React.PropsWithChildren) {
   return (
     <html lang="en">
       <body>
@@ -20,14 +18,12 @@ export default function RootLayout({
             theme={{
               token: {
                 colorPrimary: '#1890ff',
-              }
+              },
             }}
           >
             <App>
               {/* @ts-ignore */}
-              <DashboardLayout>
-                {children}
-              </DashboardLayout>
+              <DashboardLayout>{children}</DashboardLayout>
             </App>
           </ConfigProvider>
         </StyledComponentsRegistry>

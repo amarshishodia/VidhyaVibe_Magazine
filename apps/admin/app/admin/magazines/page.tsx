@@ -1,8 +1,8 @@
-"use client";
-import React from 'react';
+'use client';
 import { Button, Card, List } from 'antd';
-import api from '../../../lib/api';
 import Link from 'next/link';
+import React from 'react';
+import api from '../../../lib/api';
 
 export default function MagazinesPage() {
   const [magazines, setMagazines] = React.useState<any[]>([]);
@@ -35,4 +35,3 @@ export default function MagazinesPage() {
     </main>
   );
 }
-

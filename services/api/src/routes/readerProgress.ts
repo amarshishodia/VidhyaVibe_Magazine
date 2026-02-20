@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { getPool } from '../db';
-import { requireAuth, AuthRequest } from '../middleware/auth';
+import type { AuthRequest } from '../middleware/auth';
+import { requireAuth } from '../middleware/auth';
 
 const router = Router();
 router.use(requireAuth);
@@ -15,9 +16,15 @@ router.get('/:readerId/edition/:editionId', async (req: AuthRequest, res) => {
   const pool = getPool();
   const conn = await pool.getConnection();
   try {
-    const [rRows]: any = await conn.query('SELECT id FROM readers WHERE id = ? AND userId = ? LIMIT 1', [readerId, userId]);
+    const [rRows]: any = await conn.query(
+      'SELECT id FROM readers WHERE id = ? AND userId = ? LIMIT 1',
+      [readerId, userId],
+    );
     if (!rRows[0]) return res.status(403).json({ error: 'forbidden' });
-    const [rows]: any = await conn.query('SELECT currentPage, percent, updatedAt FROM reader_progress WHERE readerId = ? AND editionId = ? LIMIT 1', [readerId, editionId]);
+    const [rows]: any = await conn.query(
+      'SELECT currentPage, percent, updatedAt FROM reader_progress WHERE readerId = ? AND editionId = ? LIMIT 1',
+      [readerId, editionId],
+    );
     const p = rows[0] || null;
     res.json(p);
   } catch (e: any) {
@@ -38,12 +45,15 @@ router.post('/:readerId/progress', async (req: AuthRequest, res) => {
   const pool = getPool();
   const conn = await pool.getConnection();
   try {
-    const [rRows]: any = await conn.query('SELECT id FROM readers WHERE id = ? AND userId = ? LIMIT 1', [readerId, userId]);
+    const [rRows]: any = await conn.query(
+      'SELECT id FROM readers WHERE id = ? AND userId = ? LIMIT 1',
+      [readerId, userId],
+    );
     if (!rRows[0]) return res.status(403).json({ error: 'forbidden' });
     // upsert
     const [up]: any = await conn.query(
       'INSERT INTO reader_progress (readerId, editionId, currentPage, percent, updatedAt) VALUES (?, ?, ?, ?, NOW()) ON DUPLICATE KEY UPDATE currentPage = VALUES(currentPage), percent = VALUES(percent), updatedAt = NOW()',
-      [readerId, editionId, currentPage || null, percent || null]
+      [readerId, editionId, currentPage || null, percent || null],
     );
     res.json({ ok: true });
   } catch (e: any) {
@@ -55,4 +65,3 @@ router.post('/:readerId/progress', async (req: AuthRequest, res) => {
 });
 
 export default router;
-

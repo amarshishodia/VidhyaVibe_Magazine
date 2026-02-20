@@ -1,5 +1,5 @@
-import jwt from 'jsonwebtoken';
 import { getEnv } from '@magazine/config';
+import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 
 const env = getEnv();
@@ -15,7 +15,10 @@ export function signAccessToken(payload: object) {
 export function signRefreshToken(payload: object) {
   // include a jti for session tracking
   const jti = uuidv4();
-  return { token: jwt.sign({ ...payload, jti }, refreshSecret, { expiresIn: refreshExpires }), jti };
+  return {
+    token: jwt.sign({ ...payload, jti }, refreshSecret, { expiresIn: refreshExpires }),
+    jti,
+  };
 }
 
 export function verifyAccessToken(token: string) {
@@ -25,4 +28,3 @@ export function verifyAccessToken(token: string) {
 export function verifyRefreshToken(token: string) {
   return jwt.verify(token, refreshSecret) as any;
 }
-

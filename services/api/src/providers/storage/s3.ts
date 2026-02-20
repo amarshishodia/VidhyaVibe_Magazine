@@ -1,7 +1,7 @@
-import { Env, Logger } from '@magazine/config';
+import type { Readable } from 'stream';
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { Readable } from 'stream';
+import type { Env, Logger } from '@magazine/config';
 
 export function createS3Adapter(env: Env, ctx: { logger: Logger }) {
   const client = new S3Client({
@@ -11,7 +11,7 @@ export function createS3Adapter(env: Env, ctx: { logger: Logger }) {
       env.STORAGE_ACCESS_KEY && env.STORAGE_SECRET_KEY
         ? { accessKeyId: env.STORAGE_ACCESS_KEY, secretAccessKey: env.STORAGE_SECRET_KEY }
         : undefined,
-    forcePathStyle: true
+    forcePathStyle: true,
   } as any);
 
   async function streamToBuffer(stream: any) {
@@ -30,7 +30,7 @@ export function createS3Adapter(env: Env, ctx: { logger: Logger }) {
         Bucket: bucket,
         Key: key,
         Body: buffer,
-        ContentType: contentType || 'application/octet-stream'
+        ContentType: contentType || 'application/octet-stream',
       });
       await client.send(cmd);
       const url = `${env.STORAGE_ENDPOINT?.replace(/\/$/, '') || ''}/${bucket}/${key}`;
@@ -49,18 +49,16 @@ export function createS3Adapter(env: Env, ctx: { logger: Logger }) {
       const cmd = new PutObjectCommand({
         Bucket: bucket,
         Key: key,
-        ContentType: contentType
+        ContentType: contentType,
       });
       const url = await getSignedUrl(client as any, cmd, { expiresIn: expiresSec });
       return { url, key };
-    }
-    ,
+    },
     async presignGet(key: string, expiresSec = 900) {
       const bucket = env.STORAGE_BUCKET || 'magazine';
       const cmd = new GetObjectCommand({ Bucket: bucket, Key: key });
       const url = await getSignedUrl(client as any, cmd, { expiresIn: expiresSec });
       return { url, key };
-    }
+    },
   };
 }
-

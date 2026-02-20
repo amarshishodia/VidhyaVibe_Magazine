@@ -1,8 +1,8 @@
-"use client";
-import React from "react";
-import axios from "axios";
-import { Card, Form, Input, Button, DatePicker, Select, message } from "antd";
-import { useRouter } from "next/navigation";
+'use client';
+import { Card, Form, Input, Button, DatePicker, Select, message } from 'antd';
+import axios from 'axios';
+import { useRouter } from 'next/navigation';
+import React from 'react';
 
 export default function DispatchDetail({ params }: any) {
   const id = params.id;
@@ -15,8 +15,8 @@ export default function DispatchDetail({ params }: any) {
       setData(r.data);
       form.setFieldsValue({
         status: r.data.status,
-        courierTrackingNumber: r.data.courier_tracking_number || r.data.courierTrackingNumber || "",
-        packedAt: r.data.packed_at ? null : null
+        courierTrackingNumber: r.data.courier_tracking_number || r.data.courierTrackingNumber || '',
+        packedAt: r.data.packed_at ? null : null,
       });
     });
   }, [id]);
@@ -24,10 +24,10 @@ export default function DispatchDetail({ params }: any) {
   async function onFinish(values: any) {
     try {
       await axios.put(`/api/admin/dispatches/${id}`, values, { withCredentials: true });
-      message.success("Updated");
-      router.push("/admin/dispatches");
+      message.success('Updated');
+      router.push('/admin/dispatches');
     } catch (e: any) {
-      message.error("Update failed");
+      message.error('Update failed');
     }
   }
 
@@ -61,4 +61,3 @@ export default function DispatchDetail({ params }: any) {
     </main>
   );
 }
-

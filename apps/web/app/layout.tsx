@@ -1,20 +1,17 @@
-import React from 'react';
 import { App, ConfigProvider } from 'antd';
+import React from 'react';
 import './globals.css';
-import Navbar from '../components/Navbar';
+import AuthProvider from '../components/AuthProvider';
 import Footer from '../components/Footer';
+import Navbar from '../components/Navbar';
 import StyledComponentsRegistry from '../lib/AntdRegistry';
 
 export const metadata = {
   title: 'Magazine for Kids',
   description: 'Interactive and colorful magazine for students.',
-}
+};
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body>
@@ -27,13 +24,15 @@ export default function RootLayout({
             }}
           >
             <App>
-              <Navbar />
-              {children}
+              <AuthProvider>
+                <Navbar />
+                {children}
+              </AuthProvider>
             </App>
             <Footer />
           </ConfigProvider>
         </StyledComponentsRegistry>
       </body>
     </html>
-  )
+  );
 }

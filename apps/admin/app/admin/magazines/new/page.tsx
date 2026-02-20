@@ -1,9 +1,9 @@
-"use client";
-import React, { useState } from 'react';
-import { Card, Form, Input, Button, Upload, message } from 'antd';
+'use client';
 import { UploadOutlined } from '@ant-design/icons';
-import api from '../../../../lib/api';
+import { Card, Form, Input, Button, Upload, message } from 'antd';
 import { useRouter } from 'next/navigation';
+import React, { useState } from 'react';
+import api from '../../../../lib/api';
 
 export default function NewMagazine() {
   const router = useRouter();
@@ -87,4 +87,3 @@ export default function NewMagazine() {
     </main>
   );
 }
-
