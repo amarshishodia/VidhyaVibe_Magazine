@@ -13,7 +13,7 @@ router.get('/:editionId/info', async (req: Request, res: Response) => {
   const conn = await pool.getConnection();
   try {
     const [rows]: any = await conn.query(
-      `SELECT me.id, me.magazineId, me.volume, me.issueNumber, me.description, me.publishedAt, me.pages, me.coverKey, m.title as magazineTitle, m.coverKey as magazineCoverKey
+      `SELECT me.id, me.magazineId, me.volume, me.issueNumber, me.description, me.publishedAt, me.pages, me.coverKey, me.sampleKey, m.title as magazineTitle, m.coverKey as magazineCoverKey
        FROM magazine_editions me
        JOIN magazines m ON m.id = me.magazineId
        WHERE me.id = ? AND me.publishedAt IS NOT NULL LIMIT 1`,
@@ -21,12 +21,51 @@ router.get('/:editionId/info', async (req: Request, res: Response) => {
     );
     const ed = rows[0];
     if (!ed) return res.status(404).json({ error: 'edition_not_found' });
-    res.json(ed);
+    res.json({
+      ...ed,
+      hasSample: !!ed.sampleKey,
+      sampleUrl: ed.sampleKey ? `/api/editions/${editionId}/sample` : null,
+    });
   } catch (e: any) {
     console.error(e);
     res.status(500).json({ error: 'fetch_failed' });
   } finally {
     conn.release();
+  }
+});
+
+// Stream sample PDF for an edition (PUBLIC - no auth required)
+router.get('/:editionId/sample', async (req: Request, res: Response) => {
+  const editionId = Number(req.params.editionId);
+  const pool = getPool();
+  const conn = await pool.getConnection();
+  try {
+    const [rows]: any = await conn.query(
+      'SELECT sampleKey FROM magazine_editions WHERE id = ? AND publishedAt IS NOT NULL LIMIT 1',
+      [editionId],
+    );
+    const ed = rows[0];
+    conn.release();
+    if (!ed) return res.status(404).json({ error: 'edition_not_found' });
+    if (!ed.sampleKey) return res.status(404).json({ error: 'no_sample_available' });
+
+    const storage = getStorageAdapter();
+    if (!storage.get) return res.status(400).json({ error: 'get_not_supported' });
+    const data: any = await storage.get(ed.sampleKey);
+    if (!data) return res.status(404).json({ error: 'sample_not_found' });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename="sample.pdf"');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    if (Buffer.isBuffer(data)) return res.send(data);
+    data.on('error', (err: any) => {
+      console.error(err);
+      res.status(500).end();
+    });
+    data.pipe(res);
+  } catch (e: any) {
+    console.error(e);
+    res.status(500).json({ error: 'fetch_failed', message: e.message });
   }
 });
 

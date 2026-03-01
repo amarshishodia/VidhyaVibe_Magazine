@@ -47,7 +47,7 @@ router.get('/:identifier/editions', async (req, res) => {
     if (!mag) return res.status(404).json({ error: 'magazine_not_found' });
 
     const [rows]: any = await conn.query(
-      `SELECT id, magazineId, volume, issueNumber, sku, description, publishedAt, pages, coverKey, createdAt
+      `SELECT id, magazineId, volume, issueNumber, sku, description, publishedAt, pages, coverKey, sampleKey, createdAt
              FROM magazine_editions
              WHERE magazineId = ? AND publishedAt IS NOT NULL AND publishedAt <= NOW()
              ORDER BY publishedAt DESC`,
@@ -61,6 +61,8 @@ router.get('/:identifier/editions', async (req, res) => {
     const editions = rows.map((ed: any) => ({
       ...ed,
       coverUrl: ed.coverKey ? assetPath(ed.coverKey) : null,
+      hasSample: !!ed.sampleKey,
+      sampleUrl: ed.sampleKey ? `/api/editions/${ed.id}/sample` : null,
     }));
     res.json(editions);
   } catch (e: any) {
@@ -80,8 +82,8 @@ router.get('/:identifier', async (req, res) => {
     // Try to parse as ID first, otherwise treat as slug
     const isNumeric = /^\d+$/.test(identifier);
     const query = isNumeric
-      ? 'SELECT id, title, slug, publisher, description, category, active FROM magazines WHERE id = ? LIMIT 1'
-      : 'SELECT id, title, slug, publisher, description, category, active FROM magazines WHERE slug = ? LIMIT 1';
+      ? 'SELECT id, title, slug, publisher, description, category, active, coverKey FROM magazines WHERE id = ? LIMIT 1'
+      : 'SELECT id, title, slug, publisher, description, category, active, coverKey FROM magazines WHERE slug = ? LIMIT 1';
 
     const [rows]: any = await conn.query(query, [identifier]);
     const magazine = rows[0];

@@ -432,7 +432,7 @@ export default function ReaderView() {
       <p>
         Page {current} / {totalPages}
       </p>
-      <style jsx>{`
+      <style>{`
         .page-container {
           display: inline-block;
           transition:

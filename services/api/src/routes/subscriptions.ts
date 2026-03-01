@@ -141,8 +141,8 @@ router.post('/subscribe', async (req: AuthRequest, res) => {
       }
     }
 
-    // compute price (simple: plan.price_cents * months)
-    const priceCents = Number(plan.price_cents) * Number(months);
+    // compute price (simple: plan.priceCents * months)
+    const priceCents = Number(plan.priceCents) * Number(months);
 
     // handle coupon validation via coupon service
     let couponId: number | null = null;

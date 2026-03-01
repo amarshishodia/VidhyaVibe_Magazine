@@ -32,7 +32,11 @@ export default function LoginPage() {
 
       message.success('Login successful!');
 
-      router.push('/admin');
+      // Full-page navigation so the Next.js middleware re-reads the
+      // refresh_token cookie that was just set by the API.
+      const params = new URLSearchParams(window.location.search);
+      const returnUrl = params.get('returnUrl') || '/admin';
+      window.location.href = returnUrl;
     } catch (error: any) {
       const errorMsg = error.response?.data?.error || 'Login failed. Please try again.';
       message.error(errorMsg);

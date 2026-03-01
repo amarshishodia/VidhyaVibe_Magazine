@@ -182,7 +182,9 @@ export default function MagazineDetailPage() {
                   {ed.description && (
                     <p style={{ fontSize: 13, color: '#555', margin: 0 }}>{ed.description}</p>
                   )}
-                  <div style={{ marginTop: 'auto' }}>
+                  <div
+                    style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}
+                  >
                     {subscribed ? (
                       <Link href={`/reader/${ed.id}`}>
                         <Button type="primary" block>
@@ -190,9 +192,22 @@ export default function MagazineDetailPage() {
                         </Button>
                       </Link>
                     ) : (
-                      <Link href={`/buy/${ed.id}`}>
-                        <Button block>Buy This Edition</Button>
-                      </Link>
+                      <>
+                        {(ed as any).hasSample && (
+                          <a
+                            href={`/api/editions/${ed.id}/sample`}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <Button block>📖 Read Free Sample</Button>
+                          </a>
+                        )}
+                        <Link href={`/buy/${ed.id}`}>
+                          <Button type="primary" block>
+                            Buy This Edition
+                          </Button>
+                        </Link>
+                      </>
                     )}
                   </div>
                 </div>

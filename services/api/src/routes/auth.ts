@@ -150,7 +150,14 @@ router.post('/refresh', async (req, res) => {
     const session = rows[0];
     if (!session) return res.status(401).json({ error: 'invalid_session' });
 
-    const access = signAccessToken({ sub: session.userId });
+    // Fetch user role so the refreshed access token carries the correct role
+    const [userRows]: any = await conn.query('SELECT isAdmin FROM users WHERE id = ? LIMIT 1', [
+      session.userId,
+    ]);
+    const user = userRows[0];
+    const role = user?.isAdmin ? 'admin' : 'user';
+
+    const access = signAccessToken({ sub: session.userId, role });
     res.json({ access_token: access, token_type: 'bearer', expires_in: 15 * 60 });
   } catch (e: any) {
     console.error(e);
@@ -199,12 +206,18 @@ router.get('/me', async (req, res) => {
         const payload: any = verifyAccessToken(token);
         const userId = Number(payload.sub);
         const [rows]: any = await conn.query(
-          'SELECT id, email, isAdmin FROM users WHERE id = ? LIMIT 1',
+          'SELECT id, email, name, phone, isAdmin FROM users WHERE id = ? LIMIT 1',
           [userId],
         );
         const u = rows[0];
         if (!u) return res.status(404).json({ error: 'user_not_found' });
-        return res.json({ id: u.id, email: u.email, isAdmin: !!u.isAdmin });
+        return res.json({
+          id: u.id,
+          email: u.email,
+          name: u.name,
+          phone: u.phone,
+          isAdmin: !!u.isAdmin,
+        });
       } catch (e: any) {
         return res.status(401).json({ error: 'invalid_token' });
       }
@@ -224,15 +237,49 @@ router.get('/me', async (req, res) => {
       if (!session) return res.status(401).json({ error: 'invalid_session' });
       const userId = session.userId;
       const [rows]: any = await conn.query(
-        'SELECT id, email, isAdmin FROM users WHERE id = ? LIMIT 1',
+        'SELECT id, email, name, phone, isAdmin FROM users WHERE id = ? LIMIT 1',
         [userId],
       );
       const u = rows[0];
       if (!u) return res.status(404).json({ error: 'user_not_found' });
-      return res.json({ id: u.id, email: u.email, isAdmin: !!u.isAdmin });
+      return res.json({
+        id: u.id,
+        email: u.email,
+        name: u.name,
+        phone: u.phone,
+        isAdmin: !!u.isAdmin,
+      });
     } catch (e: any) {
       return res.status(401).json({ error: 'invalid_refresh' });
     }
+  } finally {
+    conn.release();
+  }
+});
+
+// Update current user profile (name, phone)
+router.put('/me', async (req, res) => {
+  const auth = req.headers.authorization;
+  if (!auth) return res.status(401).json({ error: 'missing_auth' });
+  const parts = auth.split(' ');
+  if (parts.length !== 2) return res.status(401).json({ error: 'invalid_auth' });
+  const token = parts[1];
+  const pool = getPool();
+  const conn = await pool.getConnection();
+  try {
+    const payload: any = verifyAccessToken(token);
+    const userId = Number(payload?.sub);
+    if (!userId) return res.status(401).json({ error: 'invalid_token' });
+    const { name, phone } = req.body;
+    await conn.query('UPDATE users SET name = ?, phone = ? WHERE id = ?', [
+      name ?? null,
+      phone ?? null,
+      userId,
+    ]);
+    res.json({ ok: true });
+  } catch (e: any) {
+    console.error(e);
+    return res.status(401).json({ error: 'invalid_token' });
   } finally {
     conn.release();
   }
